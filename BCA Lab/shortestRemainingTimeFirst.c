@@ -1,10 +1,8 @@
 #include <stdio.h>
 
 int main() {
-    int n, i, j, t = 0, min_index;
-    int burst[20], arrival[20], remaining[20];
-    int waiting[20] = {0}, turnaround[20];
-    int completed = 0;
+    int n, i, t = 0, min_index, min_remaining, completed = 0;
+    int burst[20], arrival[20], remaining[20], waiting[20], turnaround[20];
     float avg_waiting = 0, avg_turnaround = 0;
 
     printf("Enter number of processes: ");
@@ -15,31 +13,25 @@ int main() {
         scanf("%d", &arrival[i]);
         printf("Enter burst time for process %d: ", i + 1);
         scanf("%d", &burst[i]);
-        remaining[i] = burst[i]; // Initially, remaining = burst
+        remaining[i] = burst[i];
     }
 
     while(completed != n) {
         min_index = -1;
-        int min_remaining = 9999;
+        min_remaining = 9999;
 
-        // Find process with shortest remaining time at current time
-        for(i = 0; i < n; i++) {
-            if(arrival[i] <= t && remaining[i] > 0 && remaining[i] < min_remaining) {
-                min_remaining = remaining[i];
-                min_index = i;
-            }
-        }
+        for(i = 0; i < n; i++)
+            if(arrival[i] <= t && remaining[i] > 0 && remaining[i] < min_remaining)
+                min_index = i, min_remaining = remaining[i];
 
         if(min_index == -1) {
-            t++; // No process has arrived yet
+            t++;
             continue;
         }
 
-        // Execute process for 1 unit
         remaining[min_index]--;
         t++;
 
-        // If process finished
         if(remaining[min_index] == 0) {
             completed++;
             turnaround[min_index] = t - arrival[min_index];
@@ -54,11 +46,8 @@ int main() {
         avg_turnaround += turnaround[i];
     }
 
-    avg_waiting /= n;
-    avg_turnaround /= n;
-
-    printf("\nAverage Waiting Time: %.2f", avg_waiting);
-    printf("\nAverage Turnaround Time: %.2f\n", avg_turnaround);
+    printf("\nAverage Waiting Time: %.2f", avg_waiting / n);
+    printf("\nAverage Turnaround Time: %.2f\n", avg_turnaround / n);
 
     return 0;
 }

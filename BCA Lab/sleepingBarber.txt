@@ -1,0 +1,56 @@
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#define CHAIRS 3
+
+sem_t customers, barber, mutex;
+int waiting = 0;
+
+void* barber_fun(void* arg) {
+    while (1) {
+        sem_wait(&customers);
+        sem_wait(&mutex);
+        waiting--;
+        printf("Barber is cutting hair. Waiting customers: %d\n", waiting);
+        sem_post(&mutex);
+        sem_post(&barber);
+        sleep(2);
+    }
+}
+
+void* customer_fun(void* arg) {
+    sem_wait(&mutex);
+    if (waiting < CHAIRS) {
+        waiting++;
+        printf("Customer entered shop. Waiting customers: %d\n", waiting);
+        sem_post(&customers);
+        sem_post(&mutex);
+        sem_wait(&barber);
+        printf("Customer is getting a haircut.\n");
+    } else {
+        printf("No chair available. Customer left.\n");
+        sem_post(&mutex);
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t bthread, cthread[10];
+    int i;
+    sem_init(&customers, 0, 0);
+    sem_init(&barber, 0, 0);
+    sem_init(&mutex, 0, 1);
+    pthread_create(&bthread, NULL, barber_fun, NULL);
+    for (i = 0; i < 10; i++) {
+        sleep(1);
+        pthread_create(&cthread[i], NULL, customer_fun, NULL);
+    }
+    pthread_join(bthread, NULL);
+    for (i = 0; i < 10; i++)
+        pthread_join(cthread[i], NULL);
+    sem_destroy(&customers);
+    sem_destroy(&barber);
+    sem_destroy(&mutex);
+    return 0;
+}

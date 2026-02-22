@@ -9,12 +9,18 @@ bool isPageInMemory(int page, int memory[], int frame_size) {
     return false;
 }
 
-int findLRUPageIndex(int memory[], int frame_size, int usage_order[], int ref_size) {
-    int lru_index = 0, min_usage = ref_size;
-    for (int i = 0; i < frame_size; i++)
-        if (usage_order[memory[i]] < min_usage)
-            min_usage = usage_order[memory[i]], lru_index = i;
-    return lru_index;
+int findOptimalPageIndex(int reference_string[], int memory[], int frame_size, int current_index, int ref_size) {
+    int farthest = current_index, replace_index = -1;
+    for (int i = 0; i < frame_size; i++) {
+        int j;
+        for (j = current_index; j < ref_size; j++)
+            if (memory[i] == reference_string[j]) {
+                if (j > farthest) farthest = j, replace_index = i;
+                break;
+            }
+        if (j == ref_size) return i;
+    }
+    return (replace_index == -1) ? 0 : replace_index;
 }
 
 void printFrames(int memory[], int frame_size, bool page_hit) {
@@ -24,8 +30,8 @@ void printFrames(int memory[], int frame_size, bool page_hit) {
     printf(" | %s\n", page_hit ? "Page Hit" : "Page Fault");
 }
 
-int lru_page_replacement(int reference_string[], int ref_size, int frame_size, int *page_hits) {
-    int memory[MAX_FRAMES], page_faults = 0, usage_order[MAX_PAGES] = {0}, time = 0;
+int opr_page_replacement(int reference_string[], int ref_size, int frame_size, int *page_hits) {
+    int memory[MAX_FRAMES], page_faults = 0;
     for (int i = 0; i < frame_size; i++) memory[i] = -1;
     printf("Page\tFrames\t\t\tStatus\n----\t---------------------\t-------\n");
     for (int i = 0; i < ref_size; i++) {
@@ -34,10 +40,9 @@ int lru_page_replacement(int reference_string[], int ref_size, int frame_size, i
         printf("%d\t", page);
         if (!page_hit) {
             page_faults++;
-            int lru_index = (i < frame_size) ? i : findLRUPageIndex(memory, frame_size, usage_order, ref_size);
-            memory[lru_index] = page;
+            if (i < frame_size) memory[i] = page;
+            else memory[findOptimalPageIndex(reference_string, memory, frame_size, i + 1, ref_size)] = page;
         } else (*page_hits)++;
-        usage_order[page] = time++;
         printFrames(memory, frame_size, page_hit);
     }
     return page_faults;
@@ -55,7 +60,7 @@ int main() {
     }
     printf("Enter the reference string (space-separated): ");
     for (int i = 0; i < ref_size; i++) scanf("%d", &reference_string[i]);
-    int page_faults = lru_page_replacement(reference_string, ref_size, frame_size, &page_hits);
+    int page_faults = opr_page_replacement(reference_string, ref_size, frame_size, &page_hits);
     printf("\nNumber of pages: %d\nNumber of page faults: %d\nNumber of page hits: %d\n", ref_size, page_faults, page_hits);
     return 0;
 }
